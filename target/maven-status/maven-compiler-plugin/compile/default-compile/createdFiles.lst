@@ -1,0 +1,6 @@
+com\exemplo\tarefaapi\TarefaApiApplication.class
+com\exemplo\tarefaapi\model\Tarefa.class
+com\exemplo\tarefaapi\controller\HomeController.class
+com\exemplo\tarefaapi\service\TarefaService.class
+com\exemplo\tarefaapi\controller\TarefaController.class
+com\exemplo\tarefaapi\repository\TarefaRepository.class

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minhas Tarefas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background: #f4f4f4;
+    }
+
+    h1, h2 {
+      color: #333;
+    }
+
+    input, textarea, button {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      width: 300px;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #fff;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .tarefa-concluida {
+      text-decoration: line-through;
+      color: green;
+    }
+
+    .botoes {
+      margin-top: 10px;
+    }
+
+    .botoes button {
+      margin-right: 5px;
+      padding: 8px 10px;
+    }
+
+    #editar-form {
+      display: none;
+      background: #e8e8e8;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+
+    .filtros {
+      margin: 20px 0;
+    }
+
+    .filtros button {
+      margin-right: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Minhas Tarefas</h1>
+
+<!-- Filtros -->
+<div class="filtros">
+  <button onclick="filtrarTarefas('todas')">Todas</button>
+  <button onclick="filtrarTarefas('pendentes')">Pendentes</button>
+  <button onclick="filtrarTarefas('concluidas')">Concluídas</button>
+</div>
+
+<!-- Formulário de criação -->
+<form id="form">
+  <input type="text" id="titulo" placeholder="Título da tarefa" required />
+  <textarea id="descricao" placeholder="Descrição" required></textarea>
+  <button type="submit">Criar tarefa</button>
+</form>
+
+<!-- Formulário de edição -->
+<div id="editar-form">
+  <h2>Editar tarefa</h2>
+  <input type="text" id="editar-titulo" placeholder="Novo título" required />
+  <textarea id="editar-descricao" placeholder="Nova descrição" required></textarea>
+  <button id="salvar-edicao">Salvar alterações</button>
+</div>
+
+<ul id="lista-tarefas"></ul>
+
+<script>
+  const form = document.getElementById('form');
+  const lista = document.getElementById('lista-tarefas');
+  const editarForm = document.getElementById('editar-form');
+  const editarTitulo = document.getElementById('editar-titulo');
+  const editarDescricao = document.getElementById('editar-descricao');
+  const salvarEdicao = document.getElementById('salvar-edicao');
+
+  let idEdicao = null;
+  let todasTarefas = [];
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const titulo = document.getElementById('titulo').value;
+    const descricao = document.getElementById('descricao').value;
+
+    await fetch('/tarefas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, descricao })
+    });
+
+    form.reset();
+    carregarTarefas();
+  });
+
+  salvarEdicao.addEventListener('click', async () => {
+    const titulo = editarTitulo.value;
+    const descricao = editarDescricao.value;
+
+    await fetch(`/tarefas/${idEdicao}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titulo, descricao })
+    });
+
+    editarForm.style.display = 'none';
+    idEdicao = null;
+    carregarTarefas();
+  });
+
+  async function carregarTarefas() {
+    const resposta = await fetch('/tarefas');
+    todasTarefas = await resposta.json();
+    renderizarTarefas('todas');
+  }
+
+  function renderizarTarefas(filtro) {
+    lista.innerHTML = '';
+
+    const tarefasFiltradas = todasTarefas.filter(tarefa => {
+      if (filtro === 'pendentes') return !tarefa.concluida;
+      if (filtro === 'concluidas') return tarefa.concluida;
+      return true;
+    });
+
+    tarefasFiltradas.forEach(tarefa => {
+      const li = document.createElement('li');
+      const texto = document.createElement('p');
+
+      const status = tarefa.concluida ? '✅ Concluída' : '⏳ Pendente';
+      texto.innerHTML = `<strong${tarefa.concluida ? ' class="tarefa-concluida"' : ''}>${tarefa.titulo}</strong>: ${tarefa.descricao}<br><small>Status: ${status}</small>`;
+
+      const botoes = document.createElement('div');
+      botoes.classList.add('botoes');
+
+      const btnEditar = document.createElement('button');
+      btnEditar.textContent = 'Editar';
+      btnEditar.onclick = () => {
+        editarTitulo.value = tarefa.titulo;
+        editarDescricao.value = tarefa.descricao;
+        idEdicao = tarefa.id;
+        editarForm.style.display = 'block';
+      };
+
+      const btnExcluir = document.createElement('button');
+      btnExcluir.textContent = 'Excluir';
+      btnExcluir.onclick = async () => {
+        await fetch(`/tarefas/${tarefa.id}`, { method: 'DELETE' });
+        carregarTarefas();
+      };
+
+      const btnConcluir = document.createElement('button');
+      btnConcluir.textContent = tarefa.concluida ? 'Desmarcar' : 'Concluir';
+      btnConcluir.onclick = async () => {
+        await fetch(`/tarefas/${tarefa.id}/concluir`, { method: 'PUT' });
+        carregarTarefas();
+      };
+
+      botoes.append(btnEditar, btnExcluir, btnConcluir);
+      li.append(texto, botoes);
+      lista.appendChild(li);
+    });
+  }
+
+  function filtrarTarefas(filtro) {
+    renderizarTarefas(filtro);
+  }
+
+  carregarTarefas();
+</script>
+
+</body>
+</html>
