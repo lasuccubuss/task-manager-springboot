@@ -21,4 +21,4 @@ Sistema simples de gerenciamento de tarefas desenvolvido com **Spring Boot** e i
 - Maven
 
 ## 📂 Estrutura do Projeto
-
+tarefa-api-completa/ ├── src/ │ ├── main/ │ │ ├── java/ │ │ │ └── com.exemplo.tarefaapi/ │ │ │ ├── controller/ │ │ │ ├── model/ │ │ │ ├── repository/ │ │ │ └── service/ │ │ └── resources/ │ │ └── static/ │ │ └── index.html ├── pom.xml
